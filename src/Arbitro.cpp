@@ -6,11 +6,11 @@ Arbitro::Arbitro(MemoriaCompartida<int>* cantidadCartasPorJugador, int cantidadJ
 }
 
 int Arbitro::preguntarCantidadCartas(int numeroJugardor) {
-    return this->cantidadCartasPorJugador[numeroJugardor].leer();
+    return cantidadCartasPorJugador[numeroJugardor].leer();
 }
 
 Arbitro::~Arbitro() {
-    for (int i = 0; i < this->cantidadJugadores; i++) {
-        this->cantidadCartasPorJugador[i].liberar();
+    for (int i = 0; i < cantidadJugadores; i++) {
+        cantidadCartasPorJugador[i].liberar();
     }
 }

@@ -42,7 +42,6 @@ int simular(int cantidadDeJugadores) {
                             &cantidadManos, &tirarCarta, &mirarCarta, &manos, &lock, &(cantidadCartasPorJugador[i]));
             jugador.juntar();
             jugador.jugar();
-            std::cout << "Termino jugador" << i << std::endl;
             exit (0);
         }
     }
@@ -61,7 +60,7 @@ int simular(int cantidadDeJugadores) {
     for (int i = 0; i < cantidadDeJugadores; i++) {
         wait( NULL );
     }
-    std::cout << "Termino mesa" << std::endl;
+    Logger::getInstance()->loguear("Termino mesa");
 }
 
 int main(int argc, char* argv[]) {

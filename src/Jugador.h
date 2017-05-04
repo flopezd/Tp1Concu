@@ -7,6 +7,7 @@
 #include "MemoriaCompartida.h"
 #include "Semaforo.h"
 #include "LockFile.h"
+#include "Logger.h"
 
 class Jugador {
 private:
@@ -25,6 +26,7 @@ private:
     Carta ultimaCarta;
     LockFile* lock;
     MemoriaCompartida<int>* cantidadCartas;
+    Logger* logger;
 
     void ponerCarta(int nroTurno);
     void actuar();

@@ -2,7 +2,6 @@
 #include <cstring>
 #include "Jugador.h"
 #include "Mensaje.h"
-#include "Semaforo.h"
 
 const int BUFFSIZE = 100;
 
@@ -33,46 +32,54 @@ Jugador::Jugador(Pipe* chat, Pipe* canalOperaciones, Pipe* canalEntrada, Pipe* c
     }
     this->cantidadCartas = cantidadCartas;
     this->cantidadCartas->escribir(0);
+    this->logger = Logger::getInstance();
 }
 
 void Jugador::juntar() {
     Carta carta;
     int cantCartas;
-    this->canalEntrada->leer(static_cast<void *>(&cantCartas), sizeof(int));
-    std::cout<< "Jugador " << this->identificador << " junta "<< cantCartas << " cartas." << std::endl;
+    canalEntrada->leer(static_cast<void *>(&cantCartas), sizeof(int));
+
+    std::string log = "Jugador ";
+    log.append(std::to_string(identificador)).append(" junta ").append(std::to_string(cantCartas)).append(" cartas.");
+    logger->loguear(log.c_str());
     for(int i=0; i < cantCartas; i++){
-        this->canalEntrada->leer(static_cast<void *>(&carta), sizeof(Carta));
-        this->pilon.agregarCarta(carta);
+        canalEntrada->leer(static_cast<void *>(&carta), sizeof(Carta));
+        pilon.agregarCarta(carta);
     }
 }
 
 void Jugador::ponerCarta(int nroTurno) {
     // Espera que todos hayan mirado la carta
-    for (unsigned short i=0; i < this->cantidadJugadores; i++) {
-        this->mirarCarta->p(i);
+    for (unsigned short i=0; i < cantidadJugadores; i++) {
+        mirarCarta->p(i);
     }
-    Mensaje mensaje = {PONER_CARTA, this->identificador};
+    Mensaje mensaje = {PONER_CARTA, identificador};
     canalOperaciones->escribir(static_cast<const void *>(&mensaje), sizeof(Mensaje));
     Carta carta = pilon.sacarCarta();
     canalSalida->escribir(static_cast<const void *>(&carta), sizeof(Carta));
-    std::cout<< "Jugador " << this->identificador << " jugo "<< carta.numero << " de "<< carta.palo << std::endl;
+    std::string log = "Jugador ";
+    log.append(std::to_string(identificador)).append(" jugo ").append(std::to_string(carta.numero)).append(" de ").append(std::to_string(carta.palo));
+    logger->loguear(log.c_str());
     if (pilon.cantidadCartas() == 0) {
-        std::cout<< "Jugador " << this->identificador << " gano." << std::endl;
+        std::string log = "Jugador ";
+        log.append(std::to_string(identificador)).append(" gano.");
+        logger->loguear(log.c_str());
         // Avisa a los otros procesos que termino el juego
         turno->escribir(-1);
     } else {
-        turno->escribir((nroTurno+1) % this->cantidadJugadores);
+        turno->escribir((nroTurno+1) % cantidadJugadores);
     }
     // Libera el semaforo de que jugo para que todos pueda ver la carta
-    for (unsigned short i=0; i < this->cantidadJugadores; i++) {
-        this->tirarCarta->v(i);
+    for (unsigned short i=0; i < cantidadJugadores; i++) {
+        tirarCarta->v(i);
     }
 }
 
 void Jugador::comunicar(std::string mensaje) {
     for(int i = 0; i < cantidadJugadores; i++) {
         if (i != identificador) {
-            this->chat[i].escribir(static_cast<const void *>(mensaje.c_str()), BUFFSIZE) ;
+            chat[i].escribir(static_cast<const void *>(mensaje.c_str()), BUFFSIZE) ;
         }
     }
 }
@@ -80,63 +87,66 @@ void Jugador::comunicar(std::string mensaje) {
 void Jugador::escucharYMirar() {
     char buffer[BUFFSIZE];
     for(int i = 0; i < cantidadJugadores-1; i++) {
-        ssize_t bytesLeidos = this->chat[this->identificador].leer(static_cast<void *>(buffer), BUFFSIZE) ;
+        ssize_t bytesLeidos = chat[identificador].leer(static_cast<void *>(buffer), BUFFSIZE) ;
         std :: string mensaje = buffer;
         mensaje.resize(bytesLeidos);
-//        std::cout<<"Jugador "<< this->identificador << ": " << mensaje << std::endl;
+        std::string log = "Jugador ";
+        log.append(std::to_string(identificador)).append(": ").append(mensaje);
+        logger->loguear(log.c_str());
     }
 }
 
 void Jugador::ponerLasManos() {
     std::string mensaje = "Escucha a jugador ";
-    mensaje.append(std::to_string(this->identificador));
-    mensaje.append(" decir: 'Atrevido'.");
-    this->comunicar(mensaje);
-    this->lock->tomarLock();
-    this->manos->p(0);
-    this->cantidadManos->escribir(this->cantidadManos->leer()+1);
-    std::cout<< "Jugador " << this->identificador << " puso la mano." << std::endl;
-    this->lock->liberarLock();
-    while (this->cantidadManos->leer() < this->cantidadJugadores ) {
+    mensaje.append(std::to_string(identificador)).append(" decir: 'Atrevido'.");
+    comunicar(mensaje);
+    lock->tomarLock();
+    manos->p(0);
+    cantidadManos->escribir(cantidadManos->leer()+1);
+    std::string log = "Jugador ";
+    log.append(std::to_string(identificador)).append(" puso la mano.");
+    logger->loguear(log.c_str());
+    lock->liberarLock();
+    while (cantidadManos->leer() < cantidadJugadores ) {
     }
-    int lastPid = this->manos->ultimoProceso();
+    int lastPid = manos->ultimoProceso();
     if (lastPid == getpid()) {
-        Mensaje mensaje = {JUNTAR_TODO, this->identificador};
-        this->canalOperaciones->escribir(static_cast<const void *>(&mensaje), sizeof(Mensaje));
-        this->juntar();
+        Mensaje mensaje = {JUNTAR_TODO, identificador};
+        canalOperaciones->escribir(static_cast<const void *>(&mensaje), sizeof(Mensaje));
+        juntar();
     }
-    this->ultimaCarta = NO_CARTA;
-    this->escucharYMirar();
+    ultimaCarta = NO_CARTA;
+    escucharYMirar();
 }
 
 void Jugador::actuar() {
-    Mensaje mensaje = {VER_ULTIMA_CARTA, this->identificador};
-    this->canalOperaciones->escribir(static_cast<const void *>(&mensaje), sizeof(Mensaje));
+    Mensaje mensaje = {VER_ULTIMA_CARTA, identificador};
+    canalOperaciones->escribir(static_cast<const void *>(&mensaje), sizeof(Mensaje));
     Carta carta;
-    this->canalEntrada->leer(static_cast<void *>(&carta), sizeof(Carta));
+    canalEntrada->leer(static_cast<void *>(&carta), sizeof(Carta));
     switch (carta.numero) {
         case 10: {
             std::string mensaje = "Escucha a jugador ";
-            mensaje.append(std::to_string(this->identificador));
+            mensaje.append(std::to_string(identificador));
             mensaje.append(" decir: 'Buenos dı́as señorita'.");
-            this->comunicar(mensaje);
-            this->escucharYMirar();
+            comunicar(mensaje);
+            escucharYMirar();
             break;
         }
         case 11: {
             std::string mensaje = "Escucha a jugador ";
-            mensaje.append(std::to_string(this->identificador));
+            mensaje.append(std::to_string(identificador));
             mensaje.append(" decir: 'Buenos dı́as caballero'.");
-            this->comunicar(mensaje);
-            this->escucharYMirar();
+            comunicar(mensaje);
+            escucharYMirar();
             break;
         }
         case 12: {
             std::string mensaje = "Ve a jugador ";
-            mensaje.append(std::to_string(this->identificador));
+            mensaje.append(std::to_string(identificador));
             mensaje.append(" hacer la venia.");
-            this->comunicar(mensaje);
-            this->escucharYMirar();
+            comunicar(mensaje);
+            escucharYMirar();
             break;
         }
         case 7:
@@ -144,48 +154,53 @@ void Jugador::actuar() {
             break;
         default:break;
     }
-    if (this->ultimaCarta.numero == carta.numero && carta.numero != 7) {
+    if (ultimaCarta.numero == carta.numero && carta.numero != 7) {
         ponerLasManos();
     } else {
-        this->ultimaCarta = carta;
+        ultimaCarta = carta;
     }
 }
 
 void Jugador::jugar() {
     // Libera el semaforo de que miro la carta
-    this->mirarCarta->v(this->identificador);
+    mirarCarta->v(identificador);
     while(pilon.cantidadCartas() > 0 && turno->leer() > -1) {
         int nroTurno = turno->leer();
-        if(nroTurno == this->identificador) {
-            this->ponerCarta(nroTurno);
+        if(nroTurno == identificador) {
+            ponerCarta(nroTurno);
         }
         // Espera a que tiren la carta para mirar
-        this->tirarCarta->p(this->identificador);
+        tirarCarta->p(identificador);
         if (turno->leer() > -1) {
-            this->actuar();
+            actuar();
             // Libera el semaforo de que miro la carta
-            this->mirarCarta->v(this->identificador);
-            this->cantidadCartas->escribir(this->pilon.cantidadCartas());
+            mirarCarta->v(identificador);
+            cantidadCartas->escribir(pilon.cantidadCartas());
         }
     }
-    std::cout<< "Jugador " << this->identificador << " le quedan "<< pilon.cantidadCartas() << " cartas." << std::endl;
+    std::string log = "Jugador ";
+    log.append(std::to_string(identificador)).append(" le quedan ").append(std::to_string(pilon.cantidadCartas())).append(" cartas.");
+    logger->loguear(log.c_str());
     if (pilon.cantidadCartas() == 0) {
-        Mensaje mensaje = {TERMINAR_DE_JUGAR, this->identificador};
+        Mensaje mensaje = {TERMINAR_DE_JUGAR, identificador};
         canalOperaciones->escribir(static_cast<const void *>(&mensaje), sizeof(Mensaje));
     }
+    log = "Termino jugador ";
+    log.append(std::to_string(identificador));
+    logger->loguear(log.c_str());
 }
 
 Jugador::~Jugador() {
-    this->canalOperaciones->cerrar();
-    this->canalEntrada->cerrar();
-    this->canalSalida->cerrar();
-    this->turno->liberar();
-    this->cantidadManos->liberar();
-    this->mirarCarta->eliminar();
-    this->tirarCarta->eliminar();
-    this->manos->eliminar();
-    this->cantidadCartas->liberar();
+    canalOperaciones->cerrar();
+    canalEntrada->cerrar();
+    canalSalida->cerrar();
+    turno->liberar();
+    cantidadManos->liberar();
+    mirarCarta->eliminar();
+    tirarCarta->eliminar();
+    manos->eliminar();
+    cantidadCartas->liberar();
     for(int i = 0; i < cantidadJugadores; i++) {
-        this->chat[i].cerrar();
+        chat[i].cerrar();
     }
 }

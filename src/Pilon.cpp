@@ -1,9 +1,4 @@
-//
-// Created by fran on 29/03/17.
-//
-
 #include <cstdlib>
-#include <time.h>
 #include <random>
 #include "Pilon.h"
 
@@ -16,11 +11,11 @@ int _random() {
 Pilon::Pilon(bool completo) {
     if (completo) {
         Palo palos[] = {BASTO, ESPADA, ORO, COPA};
-        Carta cartas[CARTAS_MAXIMAS];
+        Carta cartasAMezclar[CARTAS_MAXIMAS];
         for(int i=0; i<4; i++) {
             for(int j=0; j<12; j++) {
-                cartas[i*12+j].numero = j+1;
-                cartas[i*12+j].palo = palos[i];
+                cartasAMezclar[i*12+j].numero = j+1;
+                cartasAMezclar[i*12+j].palo = palos[i];
             }
         }
 
@@ -28,32 +23,32 @@ Pilon::Pilon(bool completo) {
         for(int j=0; j<intercambios; j++) {
             int nroCarta1 = _random() % CARTAS_MAXIMAS;
             int nroCarta2 = (_random() % CARTAS_MAXIMAS + nroCarta1) % CARTAS_MAXIMAS;
-            Carta aux = cartas[nroCarta1];
-            cartas[nroCarta1] = cartas[nroCarta2];
-            cartas[nroCarta2] = aux;
+            Carta aux = cartasAMezclar[nroCarta1];
+            cartasAMezclar[nroCarta1] = cartasAMezclar[nroCarta2];
+            cartasAMezclar[nroCarta2] = aux;
         }
 
         for(int j=0; j<CARTAS_MAXIMAS; j++) {
-            this->cartas.push(cartas[j]);
+            this->cartas.push(cartasAMezclar[j]);
         }
     }
 }
 
 Carta Pilon::ultimaCarta() {
-    return this->cartas.top();
+    return cartas.top();
 }
 
 long Pilon::cantidadCartas() {
-    return this->cartas.size();
+    return cartas.size();
 }
 
 void Pilon::agregarCarta(Carta carta) {
-    this->cartas.push(carta);
+    cartas.push(carta);
 }
 
 Carta Pilon::sacarCarta() {
-    Carta carta = this->cartas.top();
-    this->cartas.pop();
+    Carta carta = cartas.top();
+    cartas.pop();
     return carta;
 }
 
