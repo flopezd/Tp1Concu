@@ -53,11 +53,6 @@ void Mesa::jugar() {
     while (!terminar && timeoutCounter < 10000) {
         if (canalOperaciones->leer(static_cast<void *>(&mensaje), sizeof(Mensaje)) > 0) {
             switch (mensaje.tipoOperacion) {
-                case SACAR_CARTA:
-                    carta = pilon.sacarCarta();
-                    canalesSalida[mensaje.idCanal].escribir(static_cast<const void *>(&carta), sizeof(Carta));
-                    timeoutCounter = 0;
-                    break;
                 case PONER_CARTA: {
                     canalesEntrada[mensaje.idCanal].leer(static_cast<void *>(&carta), sizeof(Carta));
                     Carta ultimaCarta = NO_CARTA;
