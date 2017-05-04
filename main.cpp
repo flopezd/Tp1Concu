@@ -46,21 +46,27 @@ int simular(int cantidadDeJugadores) {
         }
     }
 
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        Mesa mesa(&canalOperaciones, canalHaciaLaMesa, canalDesdeLaMesa, cantidadDeJugadores, &manos, &cantidadManos);
+        mesa.repartir();
+        mesa.jugar();
+
+        turno.liberar();
+        tirarCarta.eliminar();
+        mirarCarta.eliminar();
+        cantidadManos.liberar();
+        Logger::getInstance()->loguear("Termino mesa");
+        exit(0);
+    }
+
     Arbitro arbitro(cantidadCartasPorJugador, cantidadDeJugadores);
 
-    Mesa mesa(&canalOperaciones, canalHaciaLaMesa, canalDesdeLaMesa, cantidadDeJugadores, &manos, &cantidadManos);
-    mesa.repartir();
-    mesa.jugar();
-
-    turno.liberar();
-    tirarCarta.eliminar();
-    mirarCarta.eliminar();
-    cantidadManos.liberar();
-
-    for (int i = 0; i < cantidadDeJugadores; i++) {
+    for (int i = 0; i < cantidadDeJugadores+1; i++) {
         wait( NULL );
     }
-    Logger::getInstance()->loguear("Termino mesa");
+    Logger::getInstance()->loguear("Termino arbitro");
 }
 
 int main(int argc, char* argv[]) {
