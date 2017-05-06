@@ -96,8 +96,8 @@ void Mesa::jugar() {
 Mesa::~Mesa() {
     canalOperaciones->cerrar();
     for(int i = 0; i < cantidadJugadores; i++) {
-        canalesSalida->cerrar();
-        canalesEntrada->cerrar();
+        canalesSalida[i].cerrar();
+        canalesEntrada[i].cerrar();
     }
     manos->eliminar();
     cantidadManos->liberar();

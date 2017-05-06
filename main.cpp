@@ -57,6 +57,9 @@ int simular(int cantidadDeJugadores) {
         tirarCarta.eliminar();
         mirarCarta.eliminar();
         cantidadManos.liberar();
+        for(int i = 0; i < cantidadDeJugadores; i++) {
+            chat[i].cerrar();
+        }
         Logger::getInstance()->loguear("Termino mesa");
         exit(0);
     }
@@ -66,6 +69,17 @@ int simular(int cantidadDeJugadores) {
     for (int i = 0; i < cantidadDeJugadores+1; i++) {
         wait( NULL );
     }
+
+    turno.liberar();
+    tirarCarta.eliminar();
+    mirarCarta.eliminar();
+    canalOperaciones.cerrar();
+    for(int i = 0; i < cantidadDeJugadores; i++) {
+        canalHaciaLaMesa[i].cerrar();
+        canalHaciaLaMesa[i].cerrar();
+        chat[i].cerrar();
+    }
+    manos.eliminar();
     Logger::getInstance()->loguear("Termino arbitro");
 }
 
@@ -73,6 +87,10 @@ int main(int argc, char* argv[]) {
     if (argc < 2 || atoi(argv[1]) <= 4 || atoi(argv[1]) % 2 == 1) {
         return -1;
     }
-    simular(atoi(argv[1]));
+//    for (int i=0;i<1000;i++) {
+        simular(atoi(argv[1]));
+//        sleep(0.5);
+
+//    }
     return 0;
 }
